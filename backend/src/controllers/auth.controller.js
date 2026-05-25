@@ -22,19 +22,33 @@ function createToken(user) {
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, role, phone, parentId } = req.body;
 
-  if (!name || !email || !password) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const cleanName = String(name || "").trim();
+
+  if (!cleanName || !normalizedEmail || !password) {
     throw httpError(400, "Name, email and password are required");
   }
 
-  const selectedRole = role || "student";
+  if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+    throw httpError(400, "Invalid email format");
+  }
 
-  if (!["student", "parent", "admin"].includes(selectedRole)) {
+  if (String(password).length < 6) {
+    throw httpError(400, "Password must be at least 6 characters");
+  }
+
+  const selectedRole = role || "student";
+  const allowedRoles = process.env.ALLOW_ADMIN_REGISTER === "true"
+    ? ["student", "parent", "admin"]
+    : ["student", "parent"];
+
+  if (!allowedRoles.includes(selectedRole)) {
     throw httpError(400, "Invalid role");
   }
 
   const [exists] = await pool.query(
-    "SELECT id FROM users WHERE email = ? LIMIT 1",
-    [email]
+    "SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1",
+    [normalizedEmail]
   );
 
   if (exists.length > 0) {
@@ -52,11 +66,11 @@ const register = asyncHandler(async (req, res) => {
     `,
     [
       id,
-      name,
-      email,
+      cleanName,
+      normalizedEmail,
       hashedPassword,
       selectedRole,
-      name.slice(0, 2).toUpperCase(),
+      cleanName.slice(0, 2).toUpperCase(),
       phone || null,
       parentId || null
     ]
@@ -84,17 +98,19 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password, role } = req.body;
 
-  if (!email || !password) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  if (!normalizedEmail || !password) {
     throw httpError(400, "Email and password are required");
   }
 
-  const params = role ? [email, role] : [email];
+  const params = role ? [normalizedEmail, role] : [normalizedEmail];
 
   const [rows] = await pool.query(
     `
     SELECT *
     FROM users
-    WHERE email = ?
+    WHERE LOWER(email) = LOWER(?)
     ${role ? "AND role = ?" : ""}
     LIMIT 1
     `,
