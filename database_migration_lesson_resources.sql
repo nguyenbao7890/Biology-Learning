@@ -1,0 +1,7 @@
+USE biology_learning;
+
+ALTER TABLE lessons
+  ADD COLUMN IF NOT EXISTS document_url VARCHAR(500) NULL DEFAULT '' AFTER image_url,
+  ADD COLUMN IF NOT EXISTS slide_url VARCHAR(500) NULL DEFAULT '' AFTER document_url,
+  ADD COLUMN IF NOT EXISTS model3d_url VARCHAR(500) NULL DEFAULT '' AFTER slide_url,
+  ADD COLUMN IF NOT EXISTS external_link VARCHAR(500) NULL DEFAULT '' AFTER model3d_url;
