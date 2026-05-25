@@ -202,7 +202,7 @@ export default function LoginPage({ onLogin, onRegister, onBack, error }) {
 
             <p className="mt-5 text-lg leading-8 text-slate-600">
               {isRegister
-                ? "Không còn phụ thuộc tài khoản demo. Học sinh và phụ huynh có thể tự đăng ký bằng email thật, sau đó đăng nhập để sử dụng hệ thống."
+                ? "Bạn đăng ký tài khoản với vai trò phù hợp để tiếp tục trải nghiệm hành trình sinh học kỳ diệu cùng BioSphere nhé!"
                 : "Sử dụng email và mật khẩu đã đăng ký để truy cập dashboard phù hợp với vai trò của bạn."}
             </p>
 
