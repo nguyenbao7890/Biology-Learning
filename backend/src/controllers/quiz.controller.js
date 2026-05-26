@@ -19,12 +19,15 @@ const getQuizzes = asyncHandler(async (req, res) => {
     SELECT
       q.*,
       c.title AS course_title,
-      COUNT(qq.id) AS question_count
+      COALESCE(question_counts.question_count, 0) AS question_count
     FROM quizzes q
     JOIN courses c ON c.id = q.course_id
-    LEFT JOIN quiz_questions qq ON qq.quiz_id = q.id
+    LEFT JOIN (
+      SELECT quiz_id, COUNT(*) AS question_count
+      FROM quiz_questions
+      GROUP BY quiz_id
+    ) question_counts ON question_counts.quiz_id = q.id
     ${where}
-    GROUP BY q.id
     ORDER BY q.created_at DESC
     `,
     params
