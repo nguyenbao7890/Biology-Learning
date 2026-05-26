@@ -9,7 +9,6 @@ import {
   Send,
   Sparkles,
   Trophy,
-  XCircle,
 } from "lucide-react";
 import SectionTitle from "../../components/common/SectionTitle";
 import { quizApi, studentApi } from "../../services/api";
@@ -84,7 +83,25 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
         }
 
         const list = Array.isArray(data) ? data : [data];
-        const normalized = list
+
+        const detailedList = await Promise.all(
+          list.filter(Boolean).map(async (item) => {
+            const hasQuestions =
+              Array.isArray(item.questions) || Array.isArray(item.quiz_questions);
+
+            if (hasQuestions || !item.id) {
+              return item;
+            }
+
+            try {
+              return await quizApi.getById(item.id);
+            } catch {
+              return item;
+            }
+          })
+        );
+
+        const normalized = detailedList
           .filter(Boolean)
           .map(normalizeQuiz)
           .filter((quiz) => quiz.questions.length > 0);
@@ -109,19 +126,11 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
   }, [courseId, quizId]);
 
   const activeQuiz = useMemo(() => {
-    return (
-      quizzes[activeQuizIndex] ||
-      normalizeQuiz({
-        id: "local",
-        title: "Quiz demo",
-        description: "Dữ liệu dự phòng.",
-        questions: QUIZ_QUESTIONS,
-      })
-    );
+    return quizzes[activeQuizIndex] || null;
   }, [quizzes, activeQuizIndex]);
 
-  const q = activeQuiz.questions[curr];
-  const total = activeQuiz.questions.length;
+  const q = activeQuiz?.questions?.[curr];
+  const total = activeQuiz?.questions?.length || 0;
 
   const resetQuiz = () => {
     setCurr(0);
@@ -160,10 +169,15 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
     try {
       if (activeQuiz.id && activeQuiz.id !== "local" && quizApi.submit) {
         await quizApi.submit(activeQuiz.id, {
-          answers: newAnswers.map((answer, index) => ({
-            questionId: activeQuiz.questions[index].id,
-            selectedOption: optionLetters[answer],
-          })),
+          answers: newAnswers.reduce((payload, answer, index) => {
+            const questionId = activeQuiz.questions[index].id;
+
+            if (questionId) {
+              payload[questionId] = optionLetters[answer];
+            }
+
+            return payload;
+          }, {}),
         });
       }
 
@@ -179,9 +193,11 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
   };
 
   const finalAnswers = done ? answers : answers;
+
   const score = finalAnswers.filter(
-    (answer, index) => answer === activeQuiz.questions[index]?.correctIndex
+    (answer, index) => answer === activeQuiz?.questions?.[index]?.correctIndex
   ).length;
+
   const score10 = total ? Math.round((score / total) * 10) : 0;
 
   if (loading) {
@@ -222,9 +238,11 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
 
         <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-10 text-center shadow-sm">
           <HelpCircle className="mx-auto h-10 w-10 text-emerald-600" />
+
           <h3 className="mt-4 text-lg font-bold text-slate-900">
             Chưa có quiz
           </h3>
+
           <p className="mt-2 text-sm text-slate-500">
             Admin cần tạo quiz cho khóa học trước.
           </p>
@@ -252,10 +270,16 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
         >
           <div
             className={`mx-auto flex h-20 w-20 items-center justify-center rounded-3xl ${
-              passed ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+              passed
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-amber-50 text-amber-600"
             }`}
           >
-            {passed ? <Trophy className="h-10 w-10" /> : <Sparkles className="h-10 w-10" />}
+            {passed ? (
+              <Trophy className="h-10 w-10" />
+            ) : (
+              <Sparkles className="h-10 w-10" />
+            )}
           </div>
 
           <div className="mt-5 text-3xl font-extrabold text-slate-900">
@@ -395,7 +419,9 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
                   {opt}
                 </span>
 
-                {active && <CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-emerald-600" />}
+                {active && (
+                  <CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-emerald-600" />
+                )}
               </button>
             );
           })}
@@ -407,6 +433,7 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           {curr < total - 1 ? "Câu tiếp theo" : "Nộp bài"}
+
           {curr < total - 1 ? (
             <ArrowRight className="h-4 w-4" />
           ) : (
