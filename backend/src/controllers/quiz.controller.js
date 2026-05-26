@@ -58,6 +58,7 @@ const getQuizById = asyncHandler(async (req, res) => {
       option_b,
       option_c,
       option_d,
+      correct_option,
       explanation,
       sort_order
     FROM quiz_questions
@@ -149,9 +150,19 @@ const createQuiz = asyncHandler(async (req, res) => {
 const submitQuiz = asyncHandler(async (req, res) => {
   const { answers } = req.body;
 
-  if (!answers || typeof answers !== "object") {
+  if (!answers || (typeof answers !== "object" && !Array.isArray(answers))) {
     throw httpError(400, "Answers are required");
   }
+
+  const normalizedAnswers = Array.isArray(answers)
+    ? answers.reduce((acc, item) => {
+        if (item?.questionId) {
+          acc[item.questionId] = item.selectedOption;
+        }
+
+        return acc;
+      }, {})
+    : answers;
 
   const [questions] = await pool.query(
     `
@@ -178,7 +189,7 @@ const submitQuiz = asyncHandler(async (req, res) => {
     const answerResults = [];
 
     for (const question of questions) {
-      const selectedOption = answers[question.id];
+      const selectedOption = normalizedAnswers[question.id];
       const isCorrect = selectedOption === question.correct_option;
 
       if (isCorrect) {
