@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import SectionTitle from "../../components/common/SectionTitle";
 import { quizApi, studentApi } from "../../services/api";
-import { QUIZ_QUESTIONS } from "../../data/quiz";
 
 const optionLetters = ["A", "B", "C", "D"];
 
@@ -109,14 +108,7 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
         setQuizzes(normalized);
       } catch (err) {
         setError(err.message || "Không tải được quiz");
-        setQuizzes([
-          normalizeQuiz({
-            id: "local",
-            title: "Quiz demo",
-            description: "Dữ liệu dự phòng khi API chưa có quiz.",
-            questions: QUIZ_QUESTIONS,
-          }),
-        ]);
+        setQuizzes([]);
       } finally {
         setLoading(false);
       }
@@ -244,7 +236,9 @@ export default function StudentQuiz({ onNav, mini = false, courseId, quizId }) {
           </h3>
 
           <p className="mt-2 text-sm text-slate-500">
-            Admin cần tạo quiz cho khóa học trước.
+            {error
+              ? `Không tải được quiz từ backend: ${error}`
+              : "Admin cần tạo quiz cho khóa học trước."}
           </p>
         </div>
       </div>
