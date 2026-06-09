@@ -33,8 +33,7 @@ I planned and developed this project as an AI Native Web Builder practice projec
 
 ## Demo
 
-Live demo: [your Render/Vercel/Netlify link]
-
+Live demo: https://biology-learning.onrender.com/
 Note: The current demo is deployed on Render free tier, so the first visit may take some time to start.
 
 ## Repository
